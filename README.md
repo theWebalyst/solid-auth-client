@@ -1,15 +1,27 @@
-# A library for reading and writing to Solid pods
+# A library for reading and writing to Solid pods *and* SAFE Network
 
 [![Build Status](https://travis-ci.org/solid/solid-auth-client.svg?branch=master)](https://travis-ci.org/solid/solid-auth-client)
 [![Coverage Status](https://coveralls.io/repos/github/solid/solid-auth-client/badge.svg?branch=master)](https://coveralls.io/github/solid/solid-auth-client?branch=master)
 
-The [Solid](https://solid.mit.edu/) project
-allows people to use apps on the Web
-while storing their data in their own data pod.
+This fork of `solid-auth-client` is a drop in replacement which will allows your Solid app to work on either the web (http://) or SAFE Network (safe://) with no changes needed to your code - just use this fork instead of the module on npm.
 
 `solid-auth-client` is a browser library that allows
 your apps to securely log in to Solid data pods
-and read and write data from them.
+and read and write data from them, and this fork extends that capability to use with either Solid or SAFE Network.
+
+- The [Solid](https://solid.mit.edu/) project
+allows people to use apps on the Web
+while storing their data in their own data pod. This has two major benefits: 1) separating apps and service providers from data, making them compete to provide what users want (better functionality and services) rather than to capture and exploit users and their data, and 2) making it possible for any app to read, write, understand and mash data from any other data, by using Linked Data to capture meaning alongside content, and a standard protocol for accessing data using the building block of the web: URLs.
+
+- [SAFE Network](https://safenetwork.tech) is a decentralised autonomous network that provides secure, anonymous storage, privacy and censorship resistance by eliminating the need for servers and pod storage service providers. It provides all the expected functions of the web, including decentralised DNS, messaging, end-to-end encrypted communications and storage.
+
+Together these two projects can solve the problems that are turning the web away from the open, accessible creative force for everyone, that its inventor intended. For example:
+
+1) Returning control and privacy to users through decentralisation and end-to-end encryption of all services.
+
+2) Providing new business models which don't rely on advertising and the attention economy (which drives business towards dark patterns), and which anyone can enter and scale internet-wide, without the need to finance infrastructure.
+
+3) Securing humanity's data for posterity, accessible to everyone and anyone, everywhere.
 
 ## Usage
 In the browser, the library is accessible through `solid.auth`:
@@ -25,8 +37,19 @@ solid.auth.trackSession(session => {
 </script>
 ```
 
-When developing for webpack in a Node.js environment,
-run `npm install solid-auth-client` and then do:
+When developing for webpack in a Node.js environment, you need to use this fork. So instead of `npm install solid-auth-client` you should:
+```
+git clone https://github.com/theWebalyst/solid-auth-client
+cd solid-auth-client
+npm link
+```
+And then to use this fork in your project:
+```
+cd <your-project>
+npm link solid-auth-client
+```
+
+After that, its just the same as using the upstream module:
 
 ```javascript
 const auth = require('solid-auth-client')
@@ -39,9 +62,17 @@ auth.trackSession(session => {
 })
 ```
 
-Note that this library is intended for the browser.
-You can use Node.js as a development environment,
+Note that this library is intended for the browser, or for including in bundled browser apps, including with frameworks like React.
+
+You can also use Node.js as a development environment,
 but not for actually logging in and out or making requests.
+
+## Using a Solid App on SAFE Network
+You can take an existing Solid app which uses `solid-auth-client`, and try it out on SAFE Network by following the instructions above to make it compatible. Then access it using the SAFE Browser instead of your normal web browser.
+
+You will also need to get the SAFE Browser and use it to set up an account on SAFE Network. See [How do I create an account](https://safenetwork.tech/get-involved/#how-do-i-create-an-account) under [https://safenetwork.tech/get-involved/](https://safenetwork.tech/get-involved/)).
+
+The remainder of this README is identical with that for the upstream Solid only version of this module.
 
 ## Functionality
 This library offers two main types of functionality:
@@ -50,7 +81,7 @@ This library offers two main types of functionality:
 
 ### Reading and writing data
 The `fetch` method mimics
-the browser's [`fetch` API]((https://fetch.spec.whatwg.org/)): 
+the browser's [`fetch` API]((https://fetch.spec.whatwg.org/)):
 it has the same signature and also returns a promise that resolves to the response to the request.
 You can use it to access any kind of HTTP(S) document,
 regardless of whether that document is on a Solid pod:
