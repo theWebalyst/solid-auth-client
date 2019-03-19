@@ -1,7 +1,14 @@
 import SolidAuthClient from './solid-auth-client'
+import SolidSafeClient from './solid-safe-client'
 
-// Export a singleton instance of SolidAuthClient
-const auth = new SolidAuthClient()
+// Export a singleton instance of SolidAuthClient or SolidSafeClient
+let auth
+if (window.safe !== undefined) {
+  // Running in SAFE Browser
+  auth = new SolidSafeClient()
+} else {
+  auth = new SolidAuthClient()
+}
 export default auth
 
 // Bind methods to instance, so they can be invoked as regular functions
