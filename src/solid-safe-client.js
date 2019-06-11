@@ -29,8 +29,18 @@ function safeCurrentSession() {
 }
 
 function makeSessionObject(safeWebId) {
-  let webId = (safeWebId ? safeWebId['#me']['@id'] : undefined)
-  return (webId ? { 'webId': webId } : undefined )
+  let webId = (safeWebId ? safeWebId['#me']['@id'] : '')
+  let safeSession = {
+    'webId': webId,
+
+    // To pass type checks we add redundant OIDC session members:
+    accessToken: 'undefined',
+    clientId: 'undefined',
+    idToken: 'undefined',
+    idp: 'undefined',
+    sessionKey: 'undefined'
+  }
+  return (webId ? safeSession : undefined )
 }
 
 // Store the global fetch, so the user is free to override it
@@ -44,10 +54,6 @@ export type loginOptions = {
 
 export default class SolidSafeClient extends EventEmitter {
   _pendingSession: ?Promise<?Session>
-  constructor() {
-    super()
-    this.hideLoginUI = true  // Apps should hide Login UI when this is true
-  }
 
   fetch(input: RequestInfo, options?: RequestOptions): Promise<Response> {
     console.log('safe: fetch(%s, %O)', input, options)
@@ -87,7 +93,7 @@ export default class SolidSafeClient extends EventEmitter {
 
   async popupLogin(options: loginOptions): Promise<?Session> {
     console.log('safe: popupLogin(loginOptions:\'%o\')', options)
-    return this.login(options)
+    return this.login('', options)
     // options = { ...defaultLoginOptions(), ...options }
     // if (!/https?:/.test(options.popupUri)) {
     //   options.popupUri = new URL(
