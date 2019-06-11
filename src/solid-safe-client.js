@@ -1,17 +1,13 @@
 // @flow
 /* global fetch */
 import EventEmitter from 'events'
-import { authnFetch } from './authn-fetch'
-// import { openIdpPopup, obtainSession } from './popup'
 import type { Session } from './session'
 import { getSession, saveSession, clearSession } from './session'
 import type { AsyncStorage } from './storage'
 import { defaultStorage } from './storage'
 import { toUrlString, currentUrlNoParams } from './url-util'
-// import * as WebIdOidc from './webid-oidc'
 
-// TODO when safenetworkjs published, change this to use safenetworkjs npm module
-import { safeJs } from './safenetworkjs' // Works if I copy safenetworkjs/dist/safenetworkjs.js to ./src
+const safeJs = require('safenetworkjs').safeJs
 
 let safeWeb // SAFE Web API (experimental WebID support etc.)
 
@@ -24,40 +20,16 @@ const untrustedAppInfo = {
   vendor: 'Untrusted'
 }
 
-if (!safeJs.isAuthorised()) {
-  safeJs.simpleAuthorise(untrustedAppInfo).then(async _ => {
-    safeWeb = safeJs.safeApp.web
-    safeWeb.getWebIds()
-    console.log('safe: safe:WebIds: %o', safeWeb.getWebIds())
-
-    window.webIdEventEmitter.on('update', (webId) => {
-      console.log('safe: webId from update', webId)
-      let session = { 'webId': webId }
-      // await saveSession(storage)(session)
-      this.emit('login', session)
-      this.emit('session', session)
-    })
-
-    // TODO remove...
-    // Test access to LDP storage:
-    safeJs.fetch('safe://plumeteststore/posts/', { method: 'GET' })
-    .then((resp) => {
-      console.log('safe: fetched: %O', resp)
-    })
-  })
-}
-
 function safeCurrentWebId() {
-  // return window.currentWebId // TODO re-instate when WebID drop-down fixed
-  return 'safe://plumeteststore/posts/card#me'
-  return 'safe://dr.who#me'
+  return window.currentWebId
 }
 
 function safeCurrentSession() {
   return makeSessionObject(safeCurrentWebId())
 }
 
-function makeSessionObject(webId) {
+function makeSessionObject(safeWebId) {
+  let webId = (safeWebId ? safeWebId['#me']['@id'] : undefined)
   return (webId ? { 'webId': webId } : undefined )
 }
 
@@ -70,7 +42,7 @@ export type loginOptions = {
   storage: AsyncStorage
 }
 
-export default class SolidAuthClient extends EventEmitter {
+export default class SolidSafeClient extends EventEmitter {
   _pendingSession: ?Promise<?Session>
   constructor() {
     super()
@@ -85,17 +57,37 @@ export default class SolidAuthClient extends EventEmitter {
     // return authnFetch(defaultStorage(), globalFetch, input, options)
   }
 
-  login(idp: string, options: loginOptions): Promise<?Session> {
+  async login(idp: string, options: loginOptions): Promise<?Session> {
     console.log('safe: login(idp:\'%s\', loginOptions:\'%o\')', idp, options)
 
     // throw new Error('TODO implement %s.login()', this.constructor.name)
     // options = { ...defaultLoginOptions(currentUrlNoParams()), ...options }
     // return WebIdOidc.login(idp, options)
+
+    // TODO remove checks on window if this stays here (was global)
+    let session
+    if (window && window.safe && !safeJs.isAuthorised()) {
+      await safeJs.initAuthorised(untrustedAppInfo)
+      if (safeJs.isAuthorised()) {
+        safeWeb = safeJs.safeApp.web
+        console.log('safe:WebIds: %o', safeWeb.getWebIds())
+
+        window.webIdEventEmitter.on('update', (safeWebId) => {
+          console.log('safe: safeWebId from update', safeWebId)
+          let webId = safeWebId['#me']['@id']
+          session = { 'webId': webId }
+          // await saveSession(storage)(session)
+          this.emit('login', session)
+          this.emit('session', session)
+        })
+      }
+    }
+    return session
   }
 
   async popupLogin(options: loginOptions): Promise<?Session> {
     console.log('safe: popupLogin(loginOptions:\'%o\')', options)
-
+    return this.login(options)
     // options = { ...defaultLoginOptions(), ...options }
     // if (!/https?:/.test(options.popupUri)) {
     //   options.popupUri = new URL(
