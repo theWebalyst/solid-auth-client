@@ -30,7 +30,8 @@ module.exports = {
     'text-encoding': 'TextEncoder',
     'whatwg-url': 'window',
     'isomorphic-fetch': 'fetch',
-    '@trust/webcrypto': 'crypto'
+    '@trust/webcrypto': 'crypto',
+    'solid-auth-cli': 'solid-auth-cli-null'
   },
   devtool: 'source-map'
 }
