@@ -40,6 +40,7 @@ function makeSessionObject(safeWebId) {
     idp: 'undefined',
     sessionKey: 'undefined'
   }
+  console.log('safe: makeSessionObject() has WebID:', ', session: ', safeSession)
   return (webId ? safeSession : undefined )
 }
 
@@ -70,23 +71,37 @@ export default class SolidSafeClient extends EventEmitter {
     // options = { ...defaultLoginOptions(currentUrlNoParams()), ...options }
     // return WebIdOidc.login(idp, options)
 
-    // TODO remove checks on window if this stays here (was global)
-    let session
-    if (window && window.safe && !safeJs.isAuthorised()) {
-      await safeJs.initAuthorised(untrustedAppInfo)
-      if (safeJs.isAuthorised()) {
-        safeWeb = safeJs.safeApp.web
-        console.log('safe:WebIds: %o', safeWeb.getWebIds())
+    // Handle change to currentWebId
+    window.webIdEventEmitter.on('update', (safeWebId) => {
+      console.log('safe: safeWebId from update', safeWebId)
+      let session
+      if (safeJs.isAuthorised()) session = makeSessionObject(safeWebId)
 
-        window.webIdEventEmitter.on('update', (safeWebId) => {
-          console.log('safe: safeWebId from update', safeWebId)
-          let webId = safeWebId['#me']['@id']
-          session = { 'webId': webId }
-          // await saveSession(storage)(session)
-          this.emit('login', session)
-          this.emit('session', session)
-        })
+      // await saveSession(storage)(session)
+      this.emit('login', session)
+      this.emit('session', session)
+    })
+
+    if (!safeJs.isAuthorised()) await safeJs.initAuthorised(untrustedAppInfo)
+
+    if (safeJs.isAuthorised()) {
+      try {
+        safeWeb = safeJs.safeApp.web
+        // getWebIds() generates error, safe_app_nodejs issue #374
+        // https://github.com/maidsafe/safe_app_nodejs/issues/374
+        console.log('safe:WebIds: %o', await safeWeb.getWebIds())
+      } catch (e) {
+        console.log('ERROR from safeWeb.getWebIds(): ', e)
       }
+    }
+
+    let session
+    if (safeJs.isAuthorised()) {
+      if (safeJs.isAuthorised()) session = makeSessionObject(safeCurrentWebId())
+
+      // await saveSession(storage)(session)
+      this.emit('login', session)
+      this.emit('session', session)
     }
     return session
   }
@@ -114,8 +129,9 @@ export default class SolidSafeClient extends EventEmitter {
   async currentSession(
     storage: AsyncStorage = defaultStorage()
   ): Promise<?Session> {
-    console.log('safe: currentSession()')
-    return safeCurrentSession()
+    const session = safeCurrentSession()
+    console.log('safe: currentSession() returning: ', session)
+    return session
     // // Try to obtain a stored or pending session
     // let session = this._pendingSession || (await getSession(storage))
     //
