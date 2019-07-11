@@ -15,9 +15,9 @@ let safeWeb // SAFE Web API (experimental WebID support etc.)
 // This should be obtained from the Solid app so it can be identifed
 // in the SAFE Authenticator UI
 const untrustedAppInfo = {
-  id: 'Untrusted',
-  name: 'Do NOT authorise this app',
-  vendor: 'Untrusted'
+  id: 'Unidentified app',
+  name: 'Unidentified app',
+  vendor: 'WARNING: do not click Accept unless you trust this app'
 }
 
 function safeCurrentWebId() {
@@ -50,7 +50,8 @@ const globalFetch = fetch
 export type loginOptions = {
   callbackUri: string,
   popupUri: string,
-  storage: AsyncStorage
+  storage: AsyncStorage,
+  safeAppInfo: { id: string, name: string, vendor: string}
 }
 
 export default class SolidSafeClient extends EventEmitter {
@@ -61,15 +62,10 @@ export default class SolidSafeClient extends EventEmitter {
 
     this.emit('request', toUrlString(input))
     return safeJs.fetch(input, options)
-    // return authnFetch(defaultStorage(), globalFetch, input, options)
   }
 
   async login(idp: string, options: loginOptions): Promise<?Session> {
     console.log('safe: login(idp:\'%s\', loginOptions:\'%o\')', idp, options)
-
-    // throw new Error('TODO implement %s.login()', this.constructor.name)
-    // options = { ...defaultLoginOptions(currentUrlNoParams()), ...options }
-    // return WebIdOidc.login(idp, options)
 
     // Handle change to currentWebId
     window.webIdEventEmitter.on('update', (safeWebId) => {
@@ -82,7 +78,13 @@ export default class SolidSafeClient extends EventEmitter {
       this.emit('session', session)
     })
 
-    if (!safeJs.isAuthorised()) await safeJs.initAuthorised(untrustedAppInfo)
+    let appInfo = options.safeAppInfo
+    if (options.safeAppInfo === undefined) {
+      console.log('WARNING: app has not set options.safeAppInfo for SolidAuthClient.popupLogin()')
+      appInfo = untrustedAppInfo
+    }
+
+    if (!safeJs.isAuthorised()) await safeJs.initAuthorised(appInfo)
 
     if (safeJs.isAuthorised()) {
       try {
