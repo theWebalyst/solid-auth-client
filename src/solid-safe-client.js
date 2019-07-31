@@ -92,7 +92,7 @@ export default class SolidSafeClient extends EventEmitter {
     let session
     if (safeJs.isAuthorised()) {
       session = this.makeSessionObject(window.currentWebId)
-      // await saveSession(options.storage)(session)
+      await saveSession(options.storage)(session)
       this.emit('login', session)
       this.emit('session', session)
     }
@@ -191,7 +191,7 @@ export default class SolidSafeClient extends EventEmitter {
   }
 
   async safeCurrentSession() {
-    if (!safeJs.isAuthorised() && safeJs.safeApi.loadAuthUri()) {
+    if (!safeJs.isAuthorised() && safeJs.safeApi.loadAuthUri(this.safeAppInfo.id)) {
       // Attempt silent authorisation for web apps reloading page:
       await this.defaultLogin()
     }
@@ -252,7 +252,7 @@ export default class SolidSafeClient extends EventEmitter {
     const session = await getSession(storage)
     if (session) {
       try {
-        this.safeJs.safeApi.clearAuthUri()  // Forget app auth until login()
+        this.safeJs.safeApi.clearAuthUri(this.safeAppInfo.id)  // Forget app auth until login()
 
         // await WebIdOidc.logout(storage, globalFetch)
         this.emit('logout')
