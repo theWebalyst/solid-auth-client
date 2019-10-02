@@ -3,7 +3,7 @@ import SolidSafeClient from './solid-safe-client'
 
 // Export a singleton instance of SolidAuthClient or SolidSafeClient
 let auth
-if (window.safe !== undefined) {
+if (window.Safe !== undefined) {
   // Running in SAFE Browser
   auth = new SolidSafeClient()
 } else {
