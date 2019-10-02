@@ -71,9 +71,9 @@ export default class SolidSafeClient extends EventEmitter {
     })
 
     let appInfo = options.safeAppInfo
-    if (options.safeAppInfo === undefined) {
-      console.log('sac: WARNING: app has not set options.safeAppInfo for SolidAuthClient.popupLogin()')
-      appInfo = this.safeAppInfo
+    if (appInfo === undefined ) appInfo = this.safeAppInfo
+    if (appInfo === defaultAppInfo) {
+      console.log('sac: WARNING: app has not set safeAppInfo')
     }
 
     if (!safeJs.isAuthorised()) await safeJs.initAuthorised(appInfo)
