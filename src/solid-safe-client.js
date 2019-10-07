@@ -11,6 +11,13 @@ const safeJs = require('safenetworkjs').safeJs
 
 let safeWeb // SAFE Web API (experimental WebID support etc.)
 
+// TODO: until experimental APIs are restored (removed in SAFE Browser 0.15)
+const testWebId = {
+  '#me': {
+    '@id': 'safe://me.happybeing#me'
+  }
+}
+
 // Store the global fetch, so the user is free to override it
 const globalFetch = fetch
 
@@ -45,7 +52,7 @@ export default class SolidSafeClient extends EventEmitter {
     safeJs.untrustedAppInfo = appInfo
   }
 
-  fetch(input: RequestInfo, options?: RequestOptions): Promise<Response> {
+  async fetch(input: RequestInfo, options?: RequestOptions): Promise<Response> {
     console.log('sac: fetch(%s, %O)', input, options)
 
     this.emit('request', toUrlString(input))
@@ -78,20 +85,25 @@ export default class SolidSafeClient extends EventEmitter {
 
     if (!safeJs.isAuthorised()) await safeJs.initAuthorised(appInfo)
 
-    if (safeJs.isAuthorised()) {
-      try {
-        safeWeb = safeJs.safeApp.web
-        // getWebIds() generates error, safe_app_nodejs issue #374
-        // https://github.com/maidsafe/safe_app_nodejs/issues/374
-        console.log('sac:WebIds: %o', await safeWeb.getWebIds())
-      } catch (e) {
-        console.log('sac: ERROR from safeWeb.getWebIds(): ', e)
-      }
-    }
+    // TODO: this is test code only, but disabled for SAFE Browser 0.15 which lacks support
+    // if (safeJs.isAuthorised()) {
+    //   try {
+    //     safeWeb = safeJs.safeApp.web
+    //     // getWebIds() generates error, safe_app_nodejs issue #374
+    //     // https://github.com/maidsafe/safe_app_nodejs/issues/374
+    //     console.log('sac:WebIds: %o', await safeWeb.getWebIds())
+    //   } catch (e) {
+    //     console.log('sac: ERROR from safeWeb.getWebIds(): ', e)
+    //   }
+    // }
 
     let session
     if (safeJs.isAuthorised()) {
-      session = this.makeSessionObject(window.currentWebId)
+      let webId = window.currentWebId
+      // TODO: until experimental APIs are restored (removed in SAFE Browser 0.15)
+      if (webId === undefined ) webId = testWebId
+
+      session = this.makeSessionObject(webId)
       await saveSession(options.storage)(session)
       this.emit('login', session)
       this.emit('session', session)
@@ -205,6 +217,9 @@ export default class SolidSafeClient extends EventEmitter {
       // TODO without user being logged in (e.g. visitor to a blog)
       // return this.defaultLogin()
     }
+
+    // TODO: until experimental APIs are restored (removed in SAFE Browser 0.15)
+    if (webId === undefined ) webId = testWebId
 
     let currentSession
     if (safeJs.isAuthorised()) currentSession = this.makeSessionObject(webId)
